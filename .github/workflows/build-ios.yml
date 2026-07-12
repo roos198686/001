@@ -14,27 +14,46 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build
+      - name: Build app
         run: npm run build
 
-      # 关键：在CI里完整同步一次，Capacitor会自动生成Podfile
+      # 1. 先同步一次，确保iOS目录结构存在
       - name: Capacitor sync
         run: npx cap sync ios
 
-      # 再执行pod install（此时Podfile已经生成）
-      - name: Pod install
-        run: cd ios/App && pod install
+      # 2. 手动创建标准的Podfile，这是关键！
+      - name: Create Podfile manually
+        run: |
+          cat > ios/App/Podfile << 'EOF'
+          platform :ios, '15.0'
+          use_frameworks!
+          use_modular_headers!
 
-      - name: Archive
+          install! 'cocoapods', :disable_input_output_paths => true
+
+          target 'App' do
+            use_frameworks!
+            use_modular_headers!
+
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios/CapacitorCordova'
+          end
+          EOF
+
+      # 3. 现在Podfile已经存在，执行pod install
+      - name: Pod install
+        run: cd ios/App && pod install --repo-update
+
+      - name: Archive app
         run: xcodebuild archive -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO
 
-      - name: Export
-        run: mkdir output && xcodebuild -exportArchive -archivePath App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath output
+      - name: Export IPA
+        run: mkdir -p output && xcodebuild -exportArchive -archivePath App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath output
 
-      - name: Upload
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
