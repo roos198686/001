@@ -20,41 +20,51 @@ jobs:
       - name: Build app
         run: npm run build
 
-      # 1. 用Capacitor官方方式初始化iOS工程（关键：加--ios）
-      - name: Capacitor init and add iOS
+      # 1. 标准初始化：无任何非法参数
+      - name: Capacitor init & add iOS
         run: |
-          npx cap init --web-dir dist --ios
+          npx cap init MyApp com.example.myapp --web-dir dist -y
           npx cap add ios
           npx cap sync ios
 
-      # 2. 手动写入适配新版本的Podfile
-      - name: Create Podfile manually
+      # 2. 官方标准 Podfile（Capacitor 4+ 正确写法）
+      - name: Write official Podfile
         run: |
           cat > ios/App/Podfile << 'EOF'
-          platform :ios, '15.0'
+          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+          platform :ios, '14.0'
           use_frameworks!
           use_modular_headers!
 
-          install! 'cocoapods', :disable_input_output_paths => true
-
           target 'App' do
-            use_frameworks!
-            use_modular_headers!
+            capacitor_pods
+          end
 
-            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-            # 新版本Capacitor不需要单独引用CapacitorCordova了
+          post_install do |installer|
+            assertDeploymentTarget(installer)
           end
           EOF
 
-      # 3. 安装依赖
+      # 3. 正常 pod install
       - name: Pod install
         run: cd ios/App && pod install --repo-update
 
       - name: Archive app
-        run: xcodebuild archive -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild archive \
+          -workspace ios/App/App.xcworkspace \
+          -scheme App \
+          -configuration Release \
+          -sdk iphoneos \
+          CODE_SIGNING_ALLOWED=NO
 
       - name: Export IPA
-        run: mkdir -p output && xcodebuild -exportArchive -archivePath App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath output
+        run: |
+          mkdir -p output
+          xcodebuild -exportArchive \
+            -archivePath App.xcarchive \
+            -exportOptionsPlist ios/ExportOptions_NoSign.plist \
+            -exportPath output
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
