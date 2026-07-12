@@ -20,52 +20,25 @@ jobs:
       - name: Build app
         run: npm run build
 
-      # 先清理旧iOS目录，避免残留文件干扰
-      - name: Clean old ios project
-        run: rm -rf ios
-
-      # 纯官方命令，无任何非法参数
-      - name: Capacitor add & sync
+      # 先修改Xcode项目最低版本，再执行同步，从根源规避pod报错
+      - name: Fix iOS target before sync
         run: |
-          npx cap add ios
-          npx cap sync ios
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/' ios/App/App.xcodeproj/project.pbxproj
+          sed -i '' 's/platform :ios, .*/platform :ios, "16.0"/' ios/App/Podfile
 
-      # 官方标准Podfile，Capacitor全版本通用
-      - name: Generate standard Podfile
-        run: |
-          cat > ios/App/Podfile << 'EOF'
-          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
-          platform :ios, '15.0'
-          use_frameworks!
-          use_modular_headers!
-          target 'App' do
-            capacitor_pods
-          end
-          post_install do |installer|
-            assertDeploymentTarget(installer)
-          end
-          EOF
+      - name: Capacitor sync
+        run: npx cap sync ios
 
-      - name: Install pods
-        run: cd ios/App && pod install --repo-update
+      - name: Pod install
+        run: cd ios/App && pod install
 
-      - name: Archive
-        run: xcodebuild archive \
-          -workspace ios/App/App.xcworkspace \
-          -scheme App \
-          -configuration Release \
-          -sdk iphoneos \
-          CODE_SIGNING_ALLOWED=NO
+      - name: Archive app
+        run: xcodebuild archive -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO
 
       - name: Export IPA
-        run: |
-          mkdir -p output
-          xcodebuild -exportArchive \
-            -archivePath App.xcarchive \
-            -exportOptionsPlist ios/ExportOptions_NoSign.plist \
-            -exportPath output
+        run: mkdir -p output && xcodebuild -exportArchive -archivePath App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath output
 
-      - name: Upload artifact
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
