@@ -21,21 +21,20 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      # 关键：先删除旧的 ios 目录，再强制重建
       - name: Recreate Capacitor iOS project
         run: |
           rm -rf ios
           npx cap add ios
           npx cap sync ios
 
-      # 安装 CocoaPods 依赖
       - name: Install CocoaPods & Pods
         run: |
           sudo gem install cocoapods --no-document
           cd ios/App
+          sed -i '' 's/platform :ios, .*/platform :ios, '\''15.0'\''/' Podfile
+          cat Podfile
           pod install --repo-update
 
-      # 无签名打包
       - name: Xcode Archive (No Sign)
         run: |
           xcodebuild archive \
@@ -48,7 +47,6 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGN_REQUIRED=NO
 
-      # 导出未签名 IPA
       - name: Export unsigned IPA
         run: |
           xcodebuild -exportArchive \
