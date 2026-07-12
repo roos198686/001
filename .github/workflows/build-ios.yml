@@ -27,11 +27,17 @@ jobs:
         run: |
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/' ios/App/App.xcodeproj/project.pbxproj
 
-      - name: Archive app
-        run: xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -archivePath ./output/App.xcarchive CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=""
+      # 编译出 .app 包，不做archive归档
+      - name: Build app
+        run: xcodebuild build -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=""
 
-      - name: Export IPA
-        run: xcodebuild -exportArchive -archivePath ./output/App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath ./output -allowProvisioningUpdates
+      # 找到编译产物，手动打包为IPA（绕开Team校验）
+      - name: Package IPA
+        run: |
+          mkdir -p output/Payload
+          find ./ios/App/build/Release-iphoneos -name "*.app" -type d -exec cp -r {} ./output/Payload/ \;
+          cd output
+          zip -q -r App.ipa Payload/
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
