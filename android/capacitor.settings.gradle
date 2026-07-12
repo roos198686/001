@@ -7,3 +7,6 @@ project(':capacitor-community-contacts').projectDir = new File('../node_modules/
 
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/@capacitor/app/android')
+
+include ':capgo-capacitor-contacts'
+project(':capgo-capacitor-contacts').projectDir = new File('../node_modules/@capgo/capacitor-contacts/android')

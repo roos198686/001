@@ -14,40 +14,20 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install deps
+        run: npm install
 
-      - name: Build frontend
+      - name: Build
         run: npm run build
 
-      # 清空旧iOS工程，强制使用CocoaPods
-      - name: Create iOS project
+      - name: Build iOS
         run: |
           rm -rf ios
-          npx cap add ios --packagemanager CocoaPods
-
-      # 强制重写Podfile，锁定iOS 15.0
-      - name: Fix Podfile
-        run: |
+          npx cap add ios
+          npx cap sync ios
           cd ios/App
-          echo "platform :ios, '15.0'" > Podfile
-          echo "use_frameworks! :linkage => :static" >> Podfile
-          echo "target 'App' do" >> Podfile
-          echo "  capacitor_pods" >> Podfile
-          echo "end" >> Podfile
+          pod install
 
-      # 更新CocoaPods并安装依赖
-      - name: Install Pods
-        run: |
-          sudo gem install cocoapods
-          cd ios/App
-          pod install --repo-update
-
-      # 同步资源
-      - name: Capacitor Sync
-        run: npx cap sync ios
-
-      # 无签名归档打包
       - name: Archive
         run: |
           xcodebuild archive \
@@ -55,21 +35,18 @@ jobs:
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath App.xcarchive \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_IDENTITY=""
+            -archivePath build.xcarchive \
+            CODE_SIGNING_ALLOWED=NO
 
-      # 导出IPA
       - name: Export IPA
         run: |
           xcodebuild -exportArchive \
-            -archivePath App.xcarchive \
+            -archivePath build.xcarchive \
             -exportOptionsPlist ios/ExportOptions_NoSign.plist \
             -exportPath output
 
-      # 上传产物
-      - name: Upload Artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: output/
+          path: output
