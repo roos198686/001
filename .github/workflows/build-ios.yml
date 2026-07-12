@@ -28,10 +28,10 @@ jobs:
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/' ios/App/App.xcodeproj/project.pbxproj
 
       - name: Archive app
-        run: xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -archivePath ./output/App.xcarchive CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos -archivePath ./output/App.xcarchive CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=""
 
       - name: Export IPA
-        run: xcodebuild -exportArchive -archivePath ./output/App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath ./output
+        run: xcodebuild -exportArchive -archivePath ./output/App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath ./output -allowProvisioningUpdates
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
