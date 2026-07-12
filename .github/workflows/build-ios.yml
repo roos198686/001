@@ -27,11 +27,13 @@ jobs:
           npx cap add ios
           npx cap sync ios
 
-      - name: Install CocoaPods & Pods
+      - name: Fix Podfile iOS version & Install Pods
         run: |
           sudo gem install cocoapods --no-document
           cd ios/App
-          sed -i '' 's/platform :ios, .*/platform :ios, '\''15.0'\''/' Podfile
+          # macOS 兼容的 sed 语法，强制把 iOS 版本改成 15.0
+          sed -i.bak 's/platform :ios, .*/platform :ios, '\''15.0'\''/' Podfile
+          rm -f Podfile.bak
           cat Podfile
           pod install --repo-update
 
