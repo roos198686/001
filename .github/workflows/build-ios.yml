@@ -27,15 +27,24 @@ jobs:
         run: |
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/' ios/App/App.xcodeproj/project.pbxproj
 
-      # 编译出 .app 包，不做archive归档
+      # 指定编译输出目录，避免路径找不到
       - name: Build app
-        run: xcodebuild build -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=""
+        run: |
+          xcodebuild build \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath ./build_cache \
+            CONFIGURATION_BUILD_DIR=$PWD/build_out \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY=""
 
-      # 找到编译产物，手动打包为IPA（绕开Team校验）
+      # 手动打包 IPA
       - name: Package IPA
         run: |
           mkdir -p output/Payload
-          find ./ios/App/build/Release-iphoneos -name "*.app" -type d -exec cp -r {} ./output/Payload/ \;
+          cp -r ./build_out/*.app ./output/Payload/
           cd output
           zip -q -r App.ipa Payload/
 
