@@ -20,31 +20,21 @@ jobs:
       - name: Build web
         run: npm run build
 
-      # 标准同步命令，无任何额外参数
       - name: Capacitor sync ios
         run: npx cap sync ios
 
-      # 修改项目最低部署版本，解决依赖版本冲突
       - name: Fix deployment target
         run: |
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/' ios/App/App.xcodeproj/project.pbxproj
 
-      # 使用 .xcodeproj 编译（无 workspace、无 pod）
+      # 修复换行符：行尾\紧贴末尾，无空格，也改用单行写法规避问题
       - name: Archive app
-        run: xcodebuild archive \
-          -project ios/App/App.xcodeproj \
-          -scheme App \
-          -configuration Release \
-          -sdk iphoneos \
-          CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO
 
       - name: Export IPA
         run: |
           mkdir -p output
-          xcodebuild -exportArchive \
-            -archivePath App.xcarchive \
-            -exportOptionsPlist ios/ExportOptions_NoSign.plist \
-            -exportPath output
+          xcodebuild -exportArchive -archivePath App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath output
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
