@@ -1,0 +1,17 @@
+.copy-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(75, 74, 74, 0.774);
+    color: #fff;
+    padding: 20px 20px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 9999;
+    font-size: 12px;
+    min-width: 200px;
+}

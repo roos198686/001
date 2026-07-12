@@ -1,0 +1,22 @@
+App name: cupid
+Package ID:www.cupidtide.com
+
+# 删除旧平台
+Remove-Item -Recurse -Force android
+# 重新添加安卓平台
+npx cap add android
+# 同步代码、插件、配置
+npx cap sync
+打开AS
+npx cap open android
+菜单：Build → Generate Signed Bundle / APK
+选 APK → 下一步 → 选你的 .jks 密钥 → 选 Release → 打包
+
+
+cd ..
+npm run build
+npx cap sync android
+cd android
+$env:JAVA_HOME="D:\android\jbr"
+$env:PATH="$env:JAVA_HOME\bin;$env:PATH"
+.\gradlew clean installDebug

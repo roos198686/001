@@ -1,0 +1,25 @@
+{
+    "name": "你的App名",
+    "id": "com.yourcomhgtrepany.cupid",
+    "version": "1.0.0",
+    "description": "",
+    "locale": "zh-CN",
+    "app-plus": {
+        "usingComponents": false,
+        "compilerVersion": 3,
+        "splashscreen": {
+            "alwaysShowBeforeRender": true,
+            "waiting": true,
+            "autoclose": true,
+            "delay": 0
+        },
+        "modules": {},
+        "distribute": {
+            "ios": {
+                "urltypes": [],
+                "idfa": false,
+                "bundleid": "com.yourcomhgtrepany.cupid"
+            }
+        }
+    }
+}
