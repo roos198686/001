@@ -15,26 +15,28 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      # 处理依赖版本冲突
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build frontend project
+      - name: Build frontend
         run: npm run build
 
-      # 同步Capacitor，不重复新增平台
-      - name: Capacitor sync
-        run: npx cap sync ios
+      # 关键：先删除旧的 ios 目录，再强制重建
+      - name: Recreate Capacitor iOS project
+        run: |
+          rm -rf ios
+          npx cap add ios
+          npx cap sync ios
 
-      # 确保CocoaPods可用，安装依赖
+      # 安装 CocoaPods 依赖
       - name: Install CocoaPods & Pods
         run: |
           sudo gem install cocoapods --no-document
           cd ios/App
           pod install --repo-update
 
-      # 无签名打包归档
-      - name: Xcode Archive (No Code Sign)
+      # 无签名打包
+      - name: Xcode Archive (No Sign)
         run: |
           xcodebuild archive \
             -workspace ios/App/App.xcworkspace \
@@ -46,7 +48,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGN_REQUIRED=NO
 
-      # 导出未签名IPA
+      # 导出未签名 IPA
       - name: Export unsigned IPA
         run: |
           xcodebuild -exportArchive \
@@ -55,9 +57,8 @@ jobs:
             -exportPath $GITHUB_WORKSPACE/output \
             -allowProvisioningUpdates
 
-      # 上传产物
-      - name: Upload IPA artifact
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ios-unsigned-package
-          path: output/
+          name: ios-unsigned-ipa
+          path: output/*.ipa
