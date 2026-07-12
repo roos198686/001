@@ -20,17 +20,15 @@ jobs:
       - name: Build app
         run: npm run build
 
-      # 先修改Xcode项目最低版本，再执行同步，从根源规避pod报错
-      - name: Fix iOS target before sync
-        run: |
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/' ios/App/App.xcodeproj/project.pbxproj
-          sed -i '' 's/platform :ios, .*/platform :ios, "16.0"/' ios/App/Podfile
-
+      # 仅同步，不触发内置pod install
       - name: Capacitor sync
-        run: npx cap sync ios
+        run: npx cap sync ios --no-pod
 
-      - name: Pod install
-        run: cd ios/App && pod install
+      # 现在文件已生成，修改版本再安装依赖
+      - name: Fix version & pod install
+        run: |
+          sed -i '' 's/platform :ios, ".*"/platform :ios, "16.0"/' ios/App/Podfile
+          cd ios/App && pod install
 
       - name: Archive app
         run: xcodebuild archive -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO
