@@ -21,20 +21,23 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Recreate Capacitor iOS project
+      # 重建iOS工程，仅同步代码，不执行pod
+      - name: Init iOS & Sync
         run: |
           rm -rf ios
-          npx cap add ios
-          npx cap sync ios
+          npx cap add ios --no-pod
+          npx cap sync ios --no-pod
 
-      - name: Fix Podfile iOS version & Install Pods
+      # 强制改写Podfile为iOS 16.0，再安装pod
+      - name: Fix Podfile & Install Pods
         run: |
           sudo gem install cocoapods --no-document
           cd ios/App
-          # macOS 兼容的 sed 语法，强制把 iOS 版本改成 15.0
-          sed -i.bak 's/platform :ios, .*/platform :ios, '\''15.0'\''/' Podfile
-          rm -f Podfile.bak
-          cat Podfile
+          echo "platform :ios, '16.0'" > Podfile
+          echo "use_frameworks! :linkage => :static" >> Podfile
+          echo "target 'App' do" >> Podfile
+          echo "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'" >> Podfile
+          echo "end" >> Podfile
           pod install --repo-update
 
       - name: Xcode Archive (No Sign)

@@ -10,8 +10,7 @@ const config: CapacitorConfig = {
   },
 
   ios: {
-    // 关键：强制设置 iOS 最低部署目标为 15.0，解决 Capacitor 依赖问题
-    minVersion: '15.0',
+    minVersion: '16.0',
     infoPlist: {
       NSContactsUsageDescription: '需要通讯录权限才能正常使用应用'
     }
