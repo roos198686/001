@@ -17,24 +17,34 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build app
+      - name: Build web
         run: npm run build
 
-      # 仅同步，不触发内置pod install
-      - name: Capacitor sync
-        run: npx cap sync ios --no-pod
+      # 标准同步命令，无任何额外参数
+      - name: Capacitor sync ios
+        run: npx cap sync ios
 
-      # 现在文件已生成，修改版本再安装依赖
-      - name: Fix version & pod install
+      # 修改项目最低部署版本，解决依赖版本冲突
+      - name: Fix deployment target
         run: |
-          sed -i '' 's/platform :ios, ".*"/platform :ios, "16.0"/' ios/App/Podfile
-          cd ios/App && pod install
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/' ios/App/App.xcodeproj/project.pbxproj
 
+      # 使用 .xcodeproj 编译（无 workspace、无 pod）
       - name: Archive app
-        run: xcodebuild archive -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild archive \
+          -project ios/App/App.xcodeproj \
+          -scheme App \
+          -configuration Release \
+          -sdk iphoneos \
+          CODE_SIGNING_ALLOWED=NO
 
       - name: Export IPA
-        run: mkdir -p output && xcodebuild -exportArchive -archivePath App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath output
+        run: |
+          mkdir -p output
+          xcodebuild -exportArchive \
+            -archivePath App.xcarchive \
+            -exportOptionsPlist ios/ExportOptions_NoSign.plist \
+            -exportPath output
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
