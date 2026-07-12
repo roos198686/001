@@ -12,7 +12,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
@@ -27,6 +27,7 @@ jobs:
         run: |
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = .*/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/' ios/App/App.xcodeproj/project.pbxproj
 
+      # 指定编译输出目录，避免路径找不到
       - name: Build app
         run: |
           xcodebuild build \
@@ -39,17 +40,16 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY=""
 
+      # 手动打包 IPA
       - name: Package IPA
         run: |
-          mkdir -p ./ipa/Payload
-          cp -r ./build_out/*.app ./ipa/Payload/
-          cd ./ipa
-          zip -r App.ipa Payload/
-          ls -la ./ipa/
+          mkdir -p output/Payload
+          cp -r ./build_out/*.app ./output/Payload/
+          cd output
+          zip -q -r App.ipa Payload/
 
-      - name: Upload IPA to Artifacts
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: ./ipa/App.ipa
-          if-no-files-found: error
+          path: output
