@@ -15,35 +15,24 @@ jobs:
           node-version: 20
 
       - name: Install deps
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build
         run: npm run build
 
-      - name: Build iOS
-        run: |
-          rm -rf ios
-          npx cap add ios
-          npx cap sync ios
-          cd ios/App
-          pod install
+      # 关键：在CI里完整同步一次，Capacitor会自动生成Podfile
+      - name: Capacitor sync
+        run: npx cap sync ios
+
+      # 再执行pod install（此时Podfile已经生成）
+      - name: Pod install
+        run: cd ios/App && pod install
 
       - name: Archive
-        run: |
-          xcodebuild archive \
-            -workspace ios/App/App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
-            -archivePath build.xcarchive \
-            CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild archive -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO
 
-      - name: Export IPA
-        run: |
-          xcodebuild -exportArchive \
-            -archivePath build.xcarchive \
-            -exportOptionsPlist ios/ExportOptions_NoSign.plist \
-            -exportPath output
+      - name: Export
+        run: mkdir output && xcodebuild -exportArchive -archivePath App.xcarchive -exportOptionsPlist ios/ExportOptions_NoSign.plist -exportPath output
 
       - name: Upload
         uses: actions/upload-artifact@v4
