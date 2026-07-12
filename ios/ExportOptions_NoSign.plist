@@ -6,6 +6,10 @@
     <string>development</string>
     <key>signingStyle</key>
     <string>manual</string>
+    <key>signingCertificate</key>
+    <string></string>
+    <key>provisioningProfileSpecifier</key>
+    <string></string>
     <key>compileBitcode</key>
     <false/>
 </dict>
