@@ -8,14 +8,12 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true
   },
-
   ios: {
-    minVersion: '16.0',
+    minVersion: '15.0',
     infoPlist: {
       NSContactsUsageDescription: '需要通讯录权限才能正常使用应用'
     }
   },
-
   plugins: {
     Contacts: {}
   }

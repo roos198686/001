@@ -1,7 +1,7 @@
-name: Build iOS (No Sign)
+name: Build iOS
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build-ios:
@@ -9,11 +9,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
@@ -21,47 +20,56 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      # 重建iOS工程，仅同步代码，不执行pod
-      - name: Init iOS & Sync
+      # 清空旧iOS工程，强制使用CocoaPods
+      - name: Create iOS project
         run: |
           rm -rf ios
-          npx cap add ios --no-pod
-          npx cap sync ios --no-pod
+          npx cap add ios --packagemanager CocoaPods
 
-      # 强制改写Podfile为iOS 16.0，再安装pod
-      - name: Fix Podfile & Install Pods
+      # 强制重写Podfile，锁定iOS 15.0
+      - name: Fix Podfile
         run: |
-          sudo gem install cocoapods --no-document
           cd ios/App
-          echo "platform :ios, '16.0'" > Podfile
+          echo "platform :ios, '15.0'" > Podfile
           echo "use_frameworks! :linkage => :static" >> Podfile
           echo "target 'App' do" >> Podfile
-          echo "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'" >> Podfile
+          echo "  capacitor_pods" >> Podfile
           echo "end" >> Podfile
+
+      # 更新CocoaPods并安装依赖
+      - name: Install Pods
+        run: |
+          sudo gem install cocoapods
+          cd ios/App
           pod install --repo-update
 
-      - name: Xcode Archive (No Sign)
+      # 同步资源
+      - name: Capacitor Sync
+        run: npx cap sync ios
+
+      # 无签名归档打包
+      - name: Archive
         run: |
           xcodebuild archive \
             -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath $GITHUB_WORKSPACE/App.xcarchive \
+            -archivePath App.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_REQUIRED=NO
+            CODE_SIGN_IDENTITY=""
 
-      - name: Export unsigned IPA
+      # 导出IPA
+      - name: Export IPA
         run: |
           xcodebuild -exportArchive \
-            -archivePath $GITHUB_WORKSPACE/App.xcarchive \
-            -exportOptionsPlist $GITHUB_WORKSPACE/ios/ExportOptions_NoSign.plist \
-            -exportPath $GITHUB_WORKSPACE/output \
-            -allowProvisioningUpdates
+            -archivePath App.xcarchive \
+            -exportOptionsPlist ios/ExportOptions_NoSign.plist \
+            -exportPath output
 
-      - name: Upload IPA
+      # 上传产物
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-unsigned-ipa
-          path: output/*.ipa
+          name: ios-ipa
+          path: output/
