@@ -20,11 +20,14 @@ jobs:
       - name: Build app
         run: npm run build
 
-      # 1. 先同步一次，确保iOS目录结构存在
-      - name: Capacitor sync
-        run: npx cap sync ios
+      # 1. 用Capacitor官方方式初始化iOS工程（关键：加--ios）
+      - name: Capacitor init and add iOS
+        run: |
+          npx cap init --web-dir dist --ios
+          npx cap add ios
+          npx cap sync ios
 
-      # 2. 手动创建标准的Podfile，这是关键！
+      # 2. 手动写入适配新版本的Podfile
       - name: Create Podfile manually
         run: |
           cat > ios/App/Podfile << 'EOF'
@@ -39,11 +42,11 @@ jobs:
             use_modular_headers!
 
             pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios/CapacitorCordova'
+            # 新版本Capacitor不需要单独引用CapacitorCordova了
           end
           EOF
 
-      # 3. 现在Podfile已经存在，执行pod install
+      # 3. 安装依赖
       - name: Pod install
         run: cd ios/App && pod install --repo-update
 
