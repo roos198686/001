@@ -1,0 +1,63 @@
+name: Build iOS (No Sign)
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 处理依赖版本冲突
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build frontend project
+        run: npm run build
+
+      # 同步Capacitor，不重复新增平台
+      - name: Capacitor sync
+        run: npx cap sync ios
+
+      # 确保CocoaPods可用，安装依赖
+      - name: Install CocoaPods & Pods
+        run: |
+          sudo gem install cocoapods --no-document
+          cd ios/App
+          pod install --repo-update
+
+      # 无签名打包归档
+      - name: Xcode Archive (No Code Sign)
+        run: |
+          xcodebuild archive \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $GITHUB_WORKSPACE/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_REQUIRED=NO
+
+      # 导出未签名IPA
+      - name: Export unsigned IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $GITHUB_WORKSPACE/App.xcarchive \
+            -exportOptionsPlist $GITHUB_WORKSPACE/ios/ExportOptions_NoSign.plist \
+            -exportPath $GITHUB_WORKSPACE/output \
+            -allowProvisioningUpdates
+
+      # 上传产物
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-package
+          path: output/
