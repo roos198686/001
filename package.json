@@ -15,6 +15,7 @@
     "@capacitor/cli": "^7.6.7",
     "@capacitor/core": "^8.4.1",
     "@capacitor/ios": "^8.4.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@element-plus/icons-vue": "^2.3.1",
     "@walletconnect/ethereum-provider": "^2.21.6",
     "@walletconnect/modal": "^2.7.0",
